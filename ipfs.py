@@ -14,6 +14,7 @@ RESOURCES_DIR = 'resources'
 CARDS_DIR = f"{RESOURCES_DIR}/cards"
 
 METADATA_FILE = f"{RESOURCES_DIR}/card_metadata.json"
+SIG_TO_HASH_FILE = f"{RESOURCES_DIR}/sig_to_hash.json"
 
 
 def test_auth():
@@ -76,8 +77,7 @@ def pin_all_cards():
 
         response_json = json.loads(response.text)
         ipfs_hash = response_json['IpfsHash']
-        print(f"[{name}] IPFS hash: {ipfs_hash}")
-        sig_to_ipfs_hash[card['sig']] = ipfs_hash
+        print(f"[{name}] image hash: {ipfs_hash}")
 
         print(f"[{name}] pinning card metadata")
         metadata = {
@@ -85,6 +85,17 @@ def pin_all_cards():
             'description': card['description'],
             'image': f"ipfs://ipfs/{ipfs_hash}"
         }
-        pin_json(f"[metadata] {name}", metadata)
+        response = pin_json(f"[metadata] {name}", metadata)
+
+        if response.status_code != 200:
+            print(f"Error pinning metadata: {response.text}")
+
+        response_json = json.loads(response.text)
+        ipfs_hash = response_json['IpfsHash']
+        print(f"[{name}] metadata hash: {ipfs_hash}")
+        sig_to_ipfs_hash[card['sig']] = ipfs_hash
+
+    with open(SIG_TO_HASH_FILE, 'w') as f:
+        json.dump(sig_to_ipfs_hash, f)
 
     return sig_to_ipfs_hash
